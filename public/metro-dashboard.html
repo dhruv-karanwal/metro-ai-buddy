@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metro Rail Document Intelligence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            background: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+            padding: 2rem;
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #64748b;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .tab:hover {
+            color: #3b82f6;
+            background: #f1f5f9;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border-left: 4px solid #3b82f6;
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-ready { border-left-color: #10b981; }
+        .status-maintenance { border-left-color: #f59e0b; }
+        .status-safety { border-left-color: #ef4444; }
+
+        .chat-container {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 1.5rem;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #3b82f6;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.assistant {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #3b82f6;
+        }
+
+        .btn {
+            padding: 1rem 1.5rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .train-list {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .train-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .train-item:hover {
+            background: #f8fafc;
+        }
+
+        .train-item:last-child {
+            border-bottom: none;
+        }
+
+        .train-id {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-ready-badge {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-maintenance-badge {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-safety-badge {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .document-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .search-container {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-section h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .upload-area.dragover {
+            border-color: #3b82f6;
+            background: #dbeafe;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🚇 Metro Rail Document Intelligence</h1>
+            <p>AI-powered document analysis and train fleet management system</p>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>⚙️ System Controls</h3>
+                    <button class="btn" onclick="generateSyntheticData()" style="width: 100%; margin-bottom: 1rem;">
+                        🎲 Generate Sample Data
+                    </button>
+                    
+                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <p>📤 Click to upload documents</p>
+                        <small>Drag & drop PDF files here</small>
+                        <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>📊 System Stats</h3>
+                    <div style="background: white; padding: 1rem; border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Documents:</span>
+                            <strong id="docCount">15</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Trains:</span>
+                            <strong id="trainCount">8</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Ready:</span>
+                            <strong id="readyCount" style="color: #10b981;">5</strong>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="content-area">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('chat')">💬 Chat Assistant</button>
+                    <button class="tab" onclick="switchTab('fleet')">🚂 Fleet Status</button>
+                    <button class="tab" onclick="switchTab('documents')">📑 Documents</button>
+                    <button class="tab" onclick="switchTab('search')">🔍 Search</button>
+                </div>
+
+                <!-- Chat Tab -->
+                <div id="chat" class="tab-content active">
+                    <div class="quick-actions">
+                        <button class="btn btn-secondary" onclick="askQuestion('Which trains are ready for operations?')">
+                            🚂 Ready Trains?
+                        </button>
+                        <button class="btn btn-secondary" onclick="askQuestion('Which trains need maintenance?')">
+                            🔧 Maintenance Needed?
+                        </button>
+                        <button class="btn btn-secondary" onclick="askQuestion('Any safety alerts?')">
+                            ⚠️ Safety Alerts?
+                        </button>
+                    </div>
+
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message assistant">
+                                Hello! I'm your Metro Rail Document Intelligence Assistant. I can help you with train status, maintenance schedules, safety information, and more. What would you like to know?
+                            </div>
+                        </div>
+                        <div class="chat-input-container">
+                            <input type="text" class="chat-input" id="chatInput" placeholder="Ask about train status, maintenance, or safety..." onkeypress="handleChatKeyPress(event)">
+                            <button class="btn" onclick="sendMessage()">Send</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fleet Status Tab -->
+                <div id="fleet" class="tab-content">
+                    <div class="metrics-grid">
+                        <div class="metric-card status-ready">
+                            <div class="metric-value">5</div>
+                            <div class="metric-label">Ready for Service</div>
+                        </div>
+                        <div class="metric-card status-maintenance">
+                            <div class="metric-value">2</div>
+                            <div class="metric-label">Needs Maintenance</div>
+                        </div>
+                        <div class="metric-card status-safety">
+                            <div class="metric-value">1</div>
+                            <div class="metric-label">Safety Alerts</div>
+                        </div>
+                    </div>
+
+                    <div class="train-list">
+                        <div class="train-item">
+                            <div class="train-id">MR-001</div>
+                            <div class="status-badge status-ready-badge">Ready</div>
+                        </div>
+                        <div class="train-item">
+                            <div class="train-id">MR-002</div>
+                            <div class="status-badge status-ready-badge">Ready</div>
+                        </div>
+                        <div class="train-item">
+                            <div class="train-id">MR-003</div>
+                            <div class="status-badge status-maintenance-badge">Maintenance</div>
+                        </div>
+                        <div class="train-item">
+                            <div class="train-id">MR-004</div>
+                            <div class="status-badge status-ready-badge">Ready</div>
+                        </div>
+                        <div class="train-item">
+                            <div class="train-id">MR-005</div>
+                            <div class="status-badge status-safety-badge">Safety Alert</div>
+                        </div>
+                        <div class="train-item">
+                            <div class="train-id">MR-006</div>
+                            <div class="status-badge status-ready-badge">Ready</div>
+                        </div>
+                        <div class="train-item">
+                            <div class="train-id">MR-007</div>
+                            <div class="status-badge status-maintenance-badge">Maintenance</div>
+                        </div>
+                        <div class="train-item">
+                            <div class="train-id">MR-008</div>
+                            <div class="status-badge status-ready-badge">Ready</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Tab -->
+                <div id="documents" class="tab-content">
+                    <div class="document-card">
+                        <h4>📄 Daily Inspection Report - MR-001</h4>
+                        <p><strong>Type:</strong> Inspection Report | <strong>Date:</strong> 2024-12-17</p>
+                        <p>Complete safety inspection performed on MR-001. All systems operational. Brake efficiency: 98%. Door mechanisms tested successfully.</p>
+                    </div>
+                    
+                    <div class="document-card">
+                        <h4>📄 Maintenance Schedule - December 2024</h4>
+                        <p><strong>Type:</strong> Maintenance Schedule | <strong>Date:</strong> 2024-12-01</p>
+                        <p>Monthly maintenance schedule covering all Metro Rail units. MR-003 scheduled for brake system overhaul. MR-007 requires electrical system check.</p>
+                    </div>
+                    
+                    <div class="document-card">
+                        <h4>📄 Safety Alert - Emergency Brake Protocol</h4>
+                        <p><strong>Type:</strong> Safety Bulletin | <strong>Date:</strong> 2024-12-15</p>
+                        <p>Updated emergency brake procedures. All operators must complete certification by December 31st. MR-005 temporarily out of service pending brake system update.</p>
+                    </div>
+                    
+                    <div class="document-card">
+                        <h4>📄 Technical Manual - Door System v2.3</h4>
+                        <p><strong>Type:</strong> Technical Documentation | <strong>Date:</strong> 2024-11-28</p>
+                        <p>Updated door system maintenance procedures. New diagnostic protocols for door sensor calibration and emergency release mechanisms.</p>
+                    </div>
+                </div>
+
+                <!-- Search Tab -->
+                <div id="search" class="tab-content">
+                    <div class="search-container">
+                        <input type="text" class="search-input" placeholder="Search across all documents..." id="searchInput">
+                        <button class="btn" onclick="performSearch()">🔍 Search</button>
+                    </div>
+
+                    <div id="searchResults">
+                        <div class="document-card">
+                            <h4>💡 Search Suggestions:</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                                <button class="btn btn-secondary" onclick="performSampleSearch('train ready for service')">Ready Trains</button>
+                                <button class="btn btn-secondary" onclick="performSampleSearch('maintenance schedule')">Maintenance</button>
+                                <button class="btn btn-secondary" onclick="performSampleSearch('safety inspection')">Safety</button>
+                                <button class="btn btn-secondary" onclick="performSampleSearch('brake system')">Brake System</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        const trainData = {
+            'MR-001': { status: 'ready', lastInspection: '2024-12-17', nextMaintenance: '2024-12-25' },
+            'MR-002': { status: 'ready', lastInspection: '2024-12-16', nextMaintenance: '2024-12-30' },
+            'MR-003': { status: 'maintenance', lastInspection: '2024-12-10', nextMaintenance: '2024-12-20' },
+            'MR-004': { status: 'ready', lastInspection: '2024-12-17', nextMaintenance: '2024-12-28' },
+            'MR-005': { status: 'safety', lastInspection: '2024-12-15', nextMaintenance: '2024-12-22' },
+            'MR-006': { status: 'ready', lastInspection: '2024-12-17', nextMaintenance: '2024-12-27' },
+            'MR-007': { status: 'maintenance', lastInspection: '2024-12-12', nextMaintenance: '2024-12-21' },
+            'MR-008': { status: 'ready', lastInspection: '2024-12-17', nextMaintenance: '2024-12-29' }
+        };
+
+        const sampleResponses = {
+            'Which trains are ready for operations?': 'Based on the latest inspection reports, trains MR-001, MR-002, MR-004, MR-006, and MR-008 are ready for operations. All have passed their recent safety inspections and are cleared for passenger service.',
+            
+            'Which trains need maintenance?': 'Currently, MR-003 is scheduled for brake system overhaul and MR-007 requires electrical system check. Both are temporarily out of service until maintenance is completed.',
+            
+            'Any safety alerts?': 'Yes, there is an active safety alert for MR-005 regarding emergency brake protocol updates. The train is temporarily out of service pending brake system updates. All operators must complete new certification by December 31st.',
+            
+            'default': 'I understand you\'re asking about train operations. Based on our current documents, I can provide information about train status, maintenance schedules, safety inspections, and operational procedures. Could you please be more specific about what you\'d like to know?'
+        };
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            // Add user message
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user';
+            userMessage.textContent = message;
+            messagesContainer.appendChild(userMessage);
+            
+            // Clear input
+            input.value = '';
+            
+            // Add loading message
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message assistant';
+            loadingMessage.textContent = '⏳ Processing your request...';
+            messagesContainer.appendChild(loadingMessage);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            try {
+                // Send request to FastAPI backend
+                const response = await fetch('http://127.0.0.1:8000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Remove loading message
+                messagesContainer.removeChild(loadingMessage);
+                
+                // Add assistant response
+                const assistantMessage = document.createElement('div');
+                assistantMessage.className = 'message assistant';
+                assistantMessage.textContent = data.reply || 'Sorry, I received an empty response from the server.';
+                messagesContainer.appendChild(assistantMessage);
+                
+            } catch (error) {
+                console.error('Error sending message:', error);
+                
+                // Remove loading message
+                messagesContainer.removeChild(loadingMessage);
+                
+                // Add error message
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'message assistant';
+                errorMessage.textContent = `❌ Error connecting to server: ${error.message}. Please make sure the FastAPI backend is running on http://127.0.0.1:8000`;
+                messagesContainer.appendChild(errorMessage);
+            }
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function askQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+
+        function generateSyntheticData() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            
+            btn.textContent = '⏳ Generating...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.textContent = '✅ Generated!';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }, 2000);
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+            
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = `
+                <div class="document-card">
+                    <h4>🔍 Search Results for: "${query}"</h4>
+                    <p>Searching through ${Object.keys(trainData).length} train records and 15 documents...</p>
+                </div>
+                <div class="document-card">
+                    <h4>📄 Daily Inspection Report - MR-001</h4>
+                    <p><strong>Relevance:</strong> 0.94 | <strong>Match:</strong> "${query}" found in maintenance section</p>
+                    <p>Complete safety inspection performed on MR-001. All systems operational. Brake efficiency: 98%...</p>
+                </div>
+                <div class="document-card">
+                    <h4>📄 Maintenance Schedule - December 2024</h4>
+                    <p><strong>Relevance:</strong> 0.87 | <strong>Match:</strong> Multiple references to "${query}"</p>
+                    <p>Monthly maintenance schedule covering all Metro Rail units. MR-003 scheduled for brake system overhaul...</p>
+                </div>
+            `;
+        }
+
+        function performSampleSearch(query) {
+            document.getElementById('searchInput').value = query;
+            performSearch();
+        }
+
+        // File upload handling
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFileUpload(files);
+            }
+        });
+        
+        async function handleFileUpload(files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Check if file is PDF
+                if (file.type !== 'application/pdf') {
+                    alert(`⚠️ File "${file.name}" is not a PDF. Only PDF files are supported.`);
+                    continue;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    // Show uploading message
+                    const uploadMessage = `⏳ Uploading "${file.name}"...`;
+                    alert(uploadMessage);
+                    
+                    const response = await fetch('http://127.0.0.1:8000/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    alert(`✅ Successfully uploaded "${file.name}"!`);
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert(`❌ Failed to upload "${file.name}": ${error.message}. Please make sure the FastAPI backend is running on http://127.0.0.1:8000`);
+                }
+            }
+        }
+
+        // Drag and drop functionality
+        const uploadArea = document.querySelector('.upload-area');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight(e) {
+            uploadArea.classList.add('dragover');
+        }
+        
+        function unhighlight(e) {
+            uploadArea.classList.remove('dragover');
+        }
+        
+        uploadArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                handleFileUpload(files);
+            }
+        }
+    </script>
+</body>
+</html>
